@@ -40,3 +40,5 @@ register telegram bot webhook
 ```shell
 curl https://tg-workers-ai.xxxxxx.workers.dev/tgbot/register
 ```
+
+![image](https://raw.githubusercontent.com/Asutorufa/telegram-workers-ai/main/assets/screenshot.png)
