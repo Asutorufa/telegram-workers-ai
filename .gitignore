@@ -1,0 +1,4 @@
+/cmd/ai/node_modules
+/cmd/ai/build
+/cmd/ai/.wrangler
+/cmd/ai/wrangler.toml
