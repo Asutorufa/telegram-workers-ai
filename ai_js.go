@@ -2,6 +2,7 @@ package ai
 
 import (
 	"io"
+	"math/rand/v2"
 	"syscall/js"
 	_ "unsafe"
 
@@ -34,6 +35,7 @@ func (opts *DiffusionOptions) toJS() js.Value {
 	}
 	obj := NewObject()
 	obj.Set("prompt", opts.Prompt)
+	obj.Set("seed", rand.IntN(999999))
 	return obj
 }
 
@@ -47,6 +49,51 @@ func (a *AI) Diffusion(opt DiffusionOptions) (io.ReadCloser, error) {
 
 	r := js.Global().Get("Response").New(t).Get("body")
 	return ConvertReadableStreamToReadCloser(r)
+}
+
+type Llama2_7bChatOptions struct {
+	Prompt string
+}
+
+func (opts *Llama2_7bChatOptions) toJS() js.Value {
+	if opts == nil {
+		return js.Undefined()
+	}
+	// obj := NewObject()
+	// obj.Set("role", "user")
+	// obj.Set("content", opts.Prompt)
+
+	x := NewObject()
+	// x.Set("messages", js.ValueOf([]any{obj}))
+	x.Set("prompt", opts.Prompt)
+	x.Set("max_tokens", 512)
+	x.Set("seed", rand.IntN(999999))
+	x.Set("stream", true)
+
+	return x
+}
+
+func (a *AI) Llama3_8bInstruct(opt Llama2_7bChatOptions) (io.ReadCloser, error) {
+	p := a.instance.Call("run", "@cf/meta/llama-3-8b-instruct", opt.toJS())
+
+	t, err := AwaitPromise(p)
+	if err != nil {
+		return nil, err
+	}
+
+	return ConvertReadableStreamToReadCloser(t)
+}
+
+func (a *AI) Mistral7bInstructV02Lora(opt Llama2_7bChatOptions) (io.ReadCloser, error) {
+	// mistral-7b-instruct-v0.2-lor
+	p := a.instance.Call("run", "@cf/mistral/mistral-7b-instruct-v0.2-lora", opt.toJS())
+
+	t, err := AwaitPromise(p)
+	if err != nil {
+		return nil, err
+	}
+
+	return ConvertReadableStreamToReadCloser(t)
 }
 
 func (a *AI) Translate(opts TranslateOptions) (string, error) {
@@ -107,3 +154,6 @@ func AwaitPromise(promiseVal js.Value) (js.Value, error)
 
 //go:linkname ConvertReadableStreamToReadCloser github.com/syumai/workers/internal/jsutil.ConvertReadableStreamToReadCloser
 func ConvertReadableStreamToReadCloser(stream js.Value) (io.ReadCloser, error)
+
+//go:linkname ArrayFrom github.com/syumai/workers/internal/jsutil.ArrayFrom
+func ArrayFrom(v js.Value) js.Value

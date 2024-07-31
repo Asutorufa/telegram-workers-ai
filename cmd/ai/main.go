@@ -32,6 +32,8 @@ func main() {
 
 		resp, err := ai.Bot.Request(tgbotapi.NewSetMyCommands(
 			tgbotapi.BotCommand{Command: "image", Description: "generate image by prompt"},
+			tgbotapi.BotCommand{Command: "llama38binstruct", Description: "generate text by @cf/meta/llama-3-8b-instruct"},
+			tgbotapi.BotCommand{Command: "mistral7binstruct", Description: "generate text by mistral-7b-instruct-v0.2-lora"},
 		))
 
 		if err != nil {

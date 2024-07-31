@@ -3,6 +3,7 @@ package ai
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -74,10 +75,91 @@ func BotHandler() func(w http.ResponseWriter, r *http.Request) {
 			m := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprint(update.Message.From.ID))
 			m.ReplyToMessageID = update.Message.MessageID
 			msg = m
+		case "llama38binstruct":
+			data, err := NewAI().Llama3_8bInstruct(Llama2_7bChatOptions{Prompt: argument})
+			if err != nil {
+				data = io.NopCloser(strings.NewReader(err.Error()))
+			}
+			defer data.Close()
+
+			ReturnByEventSource(data, update)
+			return
+
+		case "mistral7binstruct":
+			data, err := NewAI().Mistral7bInstructV02Lora(Llama2_7bChatOptions{Prompt: argument})
+			if err != nil {
+				data = io.NopCloser(strings.NewReader(err.Error()))
+			}
+			defer data.Close()
+
+			ReturnByEventSource(data, update)
+			return
 		default:
 			return
 		}
 
-		Bot.Send(msg)
+		_, err = Bot.Send(msg)
+		if err != nil {
+			fmt.Println("send msg error", err)
+			return
+		}
 	}
+}
+
+func ReturnByEventSource(r io.ReadCloser, update *tgbotapi.Update) {
+	br := NewLlamaStreamDecoder(r)
+
+	text := strings.Builder{}
+	last := 0
+	msgId := 0
+	count := 0
+	for {
+		e, err := br.Decode()
+		if err != nil {
+			fmt.Println("decode error", err)
+			break
+		}
+		if e == "" {
+			continue
+		}
+
+		text.WriteString(e)
+
+		if count >= 25 || text.Len()-last <= 120 {
+			continue
+		}
+
+		msg, err := SendText(update, msgId, text.String())
+		if err != nil {
+			continue
+		}
+
+		count++
+		last = text.Len()
+
+		if msgId == 0 {
+			msgId = msg.MessageID
+		}
+	}
+
+	SendText(update, msgId, text.String())
+}
+
+func SendText(update *tgbotapi.Update, msgId int, text string) (tgbotapi.Message, error) {
+	var msg tgbotapi.Chattable
+	if msgId == 0 {
+		m := tgbotapi.NewMessage(update.Message.Chat.ID, text)
+		m.ReplyToMessageID = update.Message.MessageID
+		msg = m
+	} else {
+		msg = tgbotapi.NewEditMessageText(update.Message.Chat.ID, msgId, text)
+	}
+
+	rm, err := Bot.Send(msg)
+	if err != nil {
+		fmt.Println("send msg error", err)
+		return rm, err
+	}
+
+	return rm, nil
 }
