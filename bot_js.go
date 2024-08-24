@@ -71,6 +71,18 @@ func BotHandler() func(w http.ResponseWriter, r *http.Request) {
 				m.ReplyToMessageID = update.Message.MessageID
 				msg = m
 			}
+		case "dreamshaper":
+			data, err := NewAI().Dreamshaper(DiffusionOptions{Prompt: argument})
+			if err != nil {
+				m := tgbotapi.NewMessage(update.Message.Chat.ID, err.Error())
+				m.ReplyToMessageID = update.Message.MessageID
+				msg = m
+			} else {
+				defer data.Close()
+				m := tgbotapi.NewPhoto(update.Message.Chat.ID, tgbotapi.FileReader{Name: "image.png", Reader: data})
+				m.ReplyToMessageID = update.Message.MessageID
+				msg = m
+			}
 		case "user_id":
 			m := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprint(update.Message.From.ID))
 			m.ReplyToMessageID = update.Message.MessageID
