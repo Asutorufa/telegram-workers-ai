@@ -53,7 +53,7 @@ func BotHandler() func(w http.ResponseWriter, r *http.Request) {
 
 		argument := update.Message.CommandArguments()
 
-		if argument == "" {
+		if update.Message.Command() != "golden" && argument == "" {
 			return
 		}
 
@@ -106,6 +106,11 @@ func BotHandler() func(w http.ResponseWriter, r *http.Request) {
 
 			ReturnByEventSource(data, update)
 			return
+
+		case "golden":
+			m := tgbotapi.NewMessage(update.Message.Chat.ID, Golden())
+			m.ReplyToMessageID = update.Message.MessageID
+			msg = m
 		default:
 			return
 		}
