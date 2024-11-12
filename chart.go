@@ -20,6 +20,7 @@ type Chart struct {
 				TimeZoneName   string  `json:"exchangeTimezoneName"`
 				MarketPrice    float64 `json:"regularMarketPrice"`
 				PrevClosePrice float64 `json:"previousClose"`
+				ShortName      string  `json:"shortName"`
 			} `json:"meta"`
 		} `json:"result"`
 	} `json:"chart"`
@@ -51,6 +52,10 @@ func (c *Chart) Symbol() string {
 	}
 
 	return c.TickerData.Results[0].Meta.Symbol
+}
+
+func (c *Chart) ShortName() string {
+	return c.TickerData.Results[0].Meta.ShortName
 }
 
 func (c *Chart) FullExchange() string {

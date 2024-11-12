@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/syumai/tinyutil/httputil"
 )
@@ -11,12 +12,49 @@ import (
 func Golden() string {
 	c := New()
 
-	q, err := c.Lookup("GC=F")
-	if err != nil {
-		return err.Error()
-	}
+	var str strings.Builder
+	str.WriteString(formatChart(c.Lookup("GC=F")))
+	str.WriteString(formatChart(c.Lookup("SGC=F")))
+	str.WriteString(formatChart(c.Lookup("SGU=F")))
 
-	return fmt.Sprintf("exchange: %s\ncurrent: %f\nprev close price: %f\npercentage: %f%%", q.FullExchange(), q.Price(), q.PrevClosePrice(), ((q.Price()-q.PrevClosePrice())/q.PrevClosePrice())*100)
+	return str.String()
+}
+
+func JPYCNY() string {
+	c := New()
+
+	var str strings.Builder
+	str.WriteString(formatChart(c.Lookup("JPYCNY=X")))
+	return str.String()
+}
+
+func USDCNY() string {
+	c := New()
+
+	var str strings.Builder
+	str.WriteString(formatChart(c.Lookup("CNY=X")))
+	return str.String()
+}
+
+func formatChart(q *Chart, err error) string {
+	if err != nil {
+		return fmt.Sprintf(`
+%s
+`, escape(err.Error()))
+	}
+	return fmt.Sprintf(`
+⭐ *%s*
+*exchange*: %s
+*current*: %s
+*prev close price*: %s
+*percentage*: %s%%
+`,
+		escape(q.ShortName()),
+		escape(q.FullExchange()),
+		escape(fmt.Sprint(q.Price())),
+		escape(fmt.Sprint(q.PrevClosePrice())),
+		escape(fmt.Sprint(((q.Price()-q.PrevClosePrice())/q.PrevClosePrice())*100)),
+	)
 }
 
 type client struct {
@@ -61,4 +99,39 @@ func (c *client) Lookup(ticker string) (*Chart, error) {
 	}
 
 	return &chart, nil
+}
+
+func escape(str string) string {
+	char := map[rune]bool{
+		'_': true,
+		'*': true,
+		'[': true,
+		']': true,
+		'(': true,
+		')': true,
+		'~': true,
+		'`': true,
+		'>': true,
+		'#': true,
+		'+': true,
+		'-': true,
+		'=': true,
+		'|': true,
+		'{': true,
+		'}': true,
+		'.': true,
+		'!': true,
+	}
+
+	s := &strings.Builder{}
+
+	for _, c := range str {
+		if char[c] {
+			s.WriteRune('\\')
+		}
+
+		s.WriteRune(c)
+	}
+
+	return s.String()
 }

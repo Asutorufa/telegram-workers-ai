@@ -53,13 +53,12 @@ func BotHandler() func(w http.ResponseWriter, r *http.Request) {
 
 		argument := update.Message.CommandArguments()
 
-		if update.Message.Command() != "golden" && argument == "" {
-			return
-		}
-
 		var msg tgbotapi.Chattable
 		switch update.Message.Command() {
 		case "image":
+			if argument == "" {
+				return
+			}
 			data, err := NewAI().Diffusion(DiffusionOptions{Prompt: argument})
 			if err != nil {
 				m := tgbotapi.NewMessage(update.Message.Chat.ID, err.Error())
@@ -72,6 +71,9 @@ func BotHandler() func(w http.ResponseWriter, r *http.Request) {
 				msg = m
 			}
 		case "dreamshaper":
+			if argument == "" {
+				return
+			}
 			data, err := NewAI().Dreamshaper(DiffusionOptions{Prompt: argument})
 			if err != nil {
 				m := tgbotapi.NewMessage(update.Message.Chat.ID, err.Error())
@@ -88,6 +90,9 @@ func BotHandler() func(w http.ResponseWriter, r *http.Request) {
 			m.ReplyToMessageID = update.Message.MessageID
 			msg = m
 		case "llama38binstruct":
+			if argument == "" {
+				return
+			}
 			data, err := NewAI().Llama3_8bInstruct(Llama2_7bChatOptions{Prompt: argument})
 			if err != nil {
 				data = io.NopCloser(strings.NewReader(err.Error()))
@@ -98,6 +103,9 @@ func BotHandler() func(w http.ResponseWriter, r *http.Request) {
 			return
 
 		case "mistral7binstruct":
+			if argument == "" {
+				return
+			}
 			data, err := NewAI().Mistral7bInstructV02Lora(Llama2_7bChatOptions{Prompt: argument})
 			if err != nil {
 				data = io.NopCloser(strings.NewReader(err.Error()))
@@ -107,10 +115,24 @@ func BotHandler() func(w http.ResponseWriter, r *http.Request) {
 			ReturnByEventSource(data, update)
 			return
 
-		case "golden":
-			m := tgbotapi.NewMessage(update.Message.Chat.ID, Golden())
+		case "golden", "jpycny", "usdcny":
+			var str string
+			switch update.Message.Command() {
+			case "golden":
+				str = Golden()
+			case "jpycny":
+				str = JPYCNY()
+				fmt.Println(str)
+			case "usdcny":
+				str = USDCNY()
+			default:
+				return
+			}
+			m := tgbotapi.NewMessage(update.Message.Chat.ID, str)
 			m.ReplyToMessageID = update.Message.MessageID
+			m.ParseMode = "MarkdownV2"
 			msg = m
+
 		default:
 			return
 		}

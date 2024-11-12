@@ -36,6 +36,8 @@ func main() {
 			tgbotapi.BotCommand{Command: "llama38binstruct", Description: "generate text by @cf/meta/llama-3-8b-instruct"},
 			tgbotapi.BotCommand{Command: "mistral7binstruct", Description: "generate text by mistral-7b-instruct-v0.2-lora"},
 			tgbotapi.BotCommand{Command: "golden", Description: "real time golden price"},
+			tgbotapi.BotCommand{Command: "jpycny", Description: "real time jpy to cny price"},
+			tgbotapi.BotCommand{Command: "usdcny", Description: "real time usd to cny price"},
 		))
 
 		if err != nil {
