@@ -82,7 +82,7 @@ func (c *client) Lookup(ticker string) (*Chart, error) {
 		return nil, reqErr
 	}
 
-	request.Header.Set("User-Agent", "curl/7.68.0")
+	request.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:136.0) Gecko/20100101 Firefox/136.0")
 
 	response, reqErr := c.httpClient.Do(request)
 	if reqErr != nil {

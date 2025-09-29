@@ -1,12 +1,13 @@
 package ai
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"io"
 	"math/rand/v2"
 	"syscall/js"
 
 	"github.com/syumai/go-jsutil"
-	_ "github.com/syumai/workers"
 	"github.com/syumai/workers/cloudflare"
 )
 
@@ -62,6 +63,28 @@ func (a *AI) Dreamshaper(opt DiffusionOptions) (io.ReadCloser, error) {
 	return jsutil.ConvertReadableStreamToReadCloser(r), nil
 }
 
+func (a *AI) Flux1Schnell(opt DiffusionOptions) ([]byte, error) {
+	p := a.instance.Call("run", "@cf/black-forest-labs/flux-1-schnell", opt.toJS())
+
+	t, err := jsutil.AwaitPromise(p)
+	if err != nil {
+		return nil, err
+	}
+
+	respString := js.Global().Get("JSON").Call("stringify", t).String()
+
+	type Response struct {
+		Image string `json:"image"`
+	}
+
+	var resp Response
+	if err := json.Unmarshal([]byte(respString), &resp); err != nil {
+		return nil, err
+	}
+
+	return base64.StdEncoding.DecodeString(resp.Image)
+}
+
 type Llama2_7bChatOptions struct {
 	Prompt string
 }
@@ -70,18 +93,60 @@ func (opts *Llama2_7bChatOptions) toJS() js.Value {
 	if opts == nil {
 		return js.Undefined()
 	}
-	// obj := NewObject()
-	// obj.Set("role", "user")
-	// obj.Set("content", opts.Prompt)
+	system := jsutil.NewObject()
+	system.Set("role", "system")
+	system.Set("content", "You are a helpful assistant. Don't print with markdown format.")
+
+	obj := jsutil.NewObject()
+	obj.Set("role", "user")
+	obj.Set("content", opts.Prompt)
 
 	x := jsutil.NewObject()
-	// x.Set("messages", js.ValueOf([]any{obj}))
-	x.Set("prompt", opts.Prompt)
-	x.Set("max_tokens", 512)
+	x.Set("messages", js.ValueOf([]any{system, obj}))
+	// x.Set("prompt", opts.Prompt)
+	x.Set("max_tokens", 1024)
 	x.Set("seed", rand.IntN(999999))
 	x.Set("stream", true)
+	x.Set("temperature", 2.5)
+	x.Set("top_k", 10)
 
 	return x
+}
+
+// @cf/qwen/qwq-32b
+func (a *AI) QwQ32B(opt Llama2_7bChatOptions) (io.ReadCloser, error) {
+	p := a.instance.Call("run", "@cf/qwen/qwq-32b", opt.toJS())
+
+	t, err := jsutil.AwaitPromise(p)
+	if err != nil {
+		return nil, err
+	}
+
+	return jsutil.ConvertReadableStreamToReadCloser(t), nil
+}
+
+// @cf/google/gemma-3-12b-it
+func (a *AI) Gemma3_12b(opt Llama2_7bChatOptions) (io.ReadCloser, error) {
+	p := a.instance.Call("run", "@cf/google/gemma-3-12b-it", opt.toJS())
+
+	t, err := jsutil.AwaitPromise(p)
+	if err != nil {
+		return nil, err
+	}
+
+	return jsutil.ConvertReadableStreamToReadCloser(t), nil
+}
+
+// @cf/meta/llama-4-scout-17b-16e-instruct
+func (a *AI) LLama4Scout17b16eInstruct(opt Llama2_7bChatOptions) (io.ReadCloser, error) {
+	p := a.instance.Call("run", "@cf/meta/llama-4-scout-17b-16e-instruct", opt.toJS())
+
+	t, err := jsutil.AwaitPromise(p)
+	if err != nil {
+		return nil, err
+	}
+
+	return jsutil.ConvertReadableStreamToReadCloser(t), nil
 }
 
 func (a *AI) Llama3_8bInstruct(opt Llama2_7bChatOptions) (io.ReadCloser, error) {

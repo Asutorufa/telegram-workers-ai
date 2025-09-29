@@ -1,9 +1,11 @@
 package ai
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -19,6 +21,19 @@ var Bot = &tgbotapi.BotAPI{
 	Buffer: 100,
 }
 
+var MasterID func() int64 = func() int64 {
+	for _, id := range strings.FieldsFunc(cloudflare.Getenv("telegram_ids"), func(r rune) bool { return r == ',' }) {
+		i, err := strconv.ParseInt(id, 10, 64)
+		if err != nil {
+			continue
+		}
+
+		return i
+	}
+
+	return 0
+}
+
 func init() {
 	Bot.SetAPIEndpoint(tgbotapi.APIEndpoint)
 }
@@ -28,7 +43,7 @@ func BotHandler() func(w http.ResponseWriter, r *http.Request) {
 	for _, id := range strings.FieldsFunc(cloudflare.Getenv("telegram_ids"), func(r rune) bool { return r == ',' }) {
 		i, err := strconv.ParseInt(id, 10, 64)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			continue
 		}
 
@@ -48,10 +63,10 @@ func BotHandler() func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// If we got a message
-		fmt.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
-
 		argument := update.Message.CommandArguments()
+
+		// If we got a message
+		log.Printf("[%s] %s argument: %s\n", update.Message.From.UserName, update.Message.Text, argument)
 
 		var msg tgbotapi.Chattable
 		switch update.Message.Command() {
@@ -85,11 +100,66 @@ func BotHandler() func(w http.ResponseWriter, r *http.Request) {
 				m.ReplyToMessageID = update.Message.MessageID
 				msg = m
 			}
+
+		case "flux1schnell":
+			if argument == "" {
+				return
+			}
+			data, err := NewAI().Flux1Schnell(DiffusionOptions{Prompt: argument})
+			if err != nil {
+				m := tgbotapi.NewMessage(update.Message.Chat.ID, err.Error())
+				m.ReplyToMessageID = update.Message.MessageID
+				msg = m
+			} else {
+				m := tgbotapi.NewPhoto(update.Message.Chat.ID, tgbotapi.FileReader{Name: "image.png", Reader: bytes.NewReader(data)})
+				m.ReplyToMessageID = update.Message.MessageID
+				msg = m
+			}
+
 		case "user_id":
 			m := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprint(update.Message.From.ID))
 			m.ReplyToMessageID = update.Message.MessageID
 			msg = m
-		case "llama38binstruct":
+
+		case "qwq32b":
+			if argument == "" {
+				return
+			}
+			data, err := NewAI().QwQ32B(Llama2_7bChatOptions{Prompt: argument})
+			if err != nil {
+				data = io.NopCloser(strings.NewReader(err.Error()))
+			}
+			defer data.Close()
+
+			ReturnByEventSource(data, update)
+			return
+
+		case "gemma312b":
+			if argument == "" {
+				return
+			}
+			data, err := NewAI().Gemma3_12b(Llama2_7bChatOptions{Prompt: argument})
+			if err != nil {
+				data = io.NopCloser(strings.NewReader(err.Error()))
+			}
+			defer data.Close()
+
+			ReturnByEventSource(data, update)
+			return
+
+		case "llama4scout17b16e":
+			if argument == "" {
+				return
+			}
+			data, err := NewAI().LLama4Scout17b16eInstruct(Llama2_7bChatOptions{Prompt: argument})
+			if err != nil {
+				data = io.NopCloser(strings.NewReader(err.Error()))
+			}
+			defer data.Close()
+			ReturnByEventSource(data, update)
+			return
+
+		case "llama38b":
 			if argument == "" {
 				return
 			}
@@ -102,7 +172,7 @@ func BotHandler() func(w http.ResponseWriter, r *http.Request) {
 			ReturnByEventSource(data, update)
 			return
 
-		case "mistral7binstruct":
+		case "mistral7b":
 			if argument == "" {
 				return
 			}
@@ -122,7 +192,7 @@ func BotHandler() func(w http.ResponseWriter, r *http.Request) {
 				str = Golden()
 			case "jpycny":
 				str = JPYCNY()
-				fmt.Println(str)
+				log.Println(str)
 			case "usdcny":
 				str = USDCNY()
 			default:
@@ -139,7 +209,7 @@ func BotHandler() func(w http.ResponseWriter, r *http.Request) {
 
 		_, err = Bot.Send(msg)
 		if err != nil {
-			fmt.Println("send msg error", err)
+			log.Println("send msg error", err)
 			return
 		}
 	}
@@ -155,7 +225,9 @@ func ReturnByEventSource(r io.ReadCloser, update *tgbotapi.Update) {
 	for {
 		e, err := br.Decode()
 		if err != nil {
-			fmt.Println("decode error", err)
+			if err != io.EOF {
+				log.Println("decode error", err)
+			}
 			break
 		}
 		if e == "" {
@@ -164,13 +236,14 @@ func ReturnByEventSource(r io.ReadCloser, update *tgbotapi.Update) {
 
 		text.WriteString(e)
 
-		if count >= 25 || text.Len()-last <= 120 {
+		if count >= 12 || text.Len()-last <= 300 {
 			continue
 		}
 
 		msg, err := SendText(update, msgId, text.String())
 		if err != nil {
-			continue
+			log.Println("send msg error", "err", err)
+			return
 		}
 
 		count++
@@ -196,7 +269,6 @@ func SendText(update *tgbotapi.Update, msgId int, text string) (tgbotapi.Message
 
 	rm, err := Bot.Send(msg)
 	if err != nil {
-		fmt.Println("send msg error", err)
 		return rm, err
 	}
 

@@ -1,7 +1,7 @@
 #
 
 ## deploy
- 
+
 need `tinygo`, `npm`
 
 ```shell
@@ -22,7 +22,7 @@ command = "make build"
 
 [vars]
 telegram_token = "telegram_bot_token" # telegram bot token
-worker_url = "https://tg-workers-ai.xxxxxx.workers.dev" # your cloudflare worker url
+worker_url = "https://tg-workers-ai.xxxxxx.workers.dev" # optional, your cloudflare worker url
 telegram_ids = "10********,293********" # who can access bot, can get by /user_id command, separated by comma
 
 [ai]
