@@ -1,11 +1,12 @@
 package ai
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/go-json-experiment/json"
+	"github.com/go-json-experiment/json/jsontext"
 	"github.com/syumai/tinyutil/httputil"
 )
 
@@ -94,7 +95,8 @@ func (c *client) Lookup(ticker string) (*Chart, error) {
 	}
 
 	var chart Chart
-	if decErr := json.NewDecoder(response.Body).Decode(&chart); decErr != nil {
+	dec := jsontext.NewDecoder(response.Body)
+	if decErr := json.UnmarshalDecode(dec, &chart); decErr != nil {
 		return nil, decErr
 	}
 

@@ -2,7 +2,6 @@ package ai
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -10,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-json-experiment/json"
+	"github.com/go-json-experiment/json/jsontext"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/syumai/tinyutil/httputil"
 	"github.com/syumai/workers/cloudflare"
@@ -53,9 +54,8 @@ func BotHandler() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		update, err := Bot.HandleUpdate(r)
 		if err != nil {
-			json.NewEncoder(w).Encode([]any{
-				err.Error(),
-			})
+			enc := jsontext.NewEncoder(w)
+			json.MarshalEncode(enc, []any{err.Error()})
 			return
 		}
 
@@ -101,11 +101,42 @@ func BotHandler() func(w http.ResponseWriter, r *http.Request) {
 				msg = m
 			}
 
+		case "phoenix":
+			if argument == "" {
+				return
+			}
+			data, err := NewAI().Phoenix(DiffusionOptions{Prompt: argument})
+			if err != nil {
+				m := tgbotapi.NewMessage(update.Message.Chat.ID, err.Error())
+				m.ReplyToMessageID = update.Message.MessageID
+				msg = m
+			} else {
+				defer data.Close()
+				m := tgbotapi.NewPhoto(update.Message.Chat.ID, tgbotapi.FileReader{Name: "image.png", Reader: data})
+				m.ReplyToMessageID = update.Message.MessageID
+				msg = m
+			}
+
 		case "flux1schnell":
 			if argument == "" {
 				return
 			}
 			data, err := NewAI().Flux1Schnell(DiffusionOptions{Prompt: argument})
+			if err != nil {
+				m := tgbotapi.NewMessage(update.Message.Chat.ID, err.Error())
+				m.ReplyToMessageID = update.Message.MessageID
+				msg = m
+			} else {
+				m := tgbotapi.NewPhoto(update.Message.Chat.ID, tgbotapi.FileReader{Name: "image.png", Reader: bytes.NewReader(data)})
+				m.ReplyToMessageID = update.Message.MessageID
+				msg = m
+			}
+
+		case "lucid":
+			if argument == "" {
+				return
+			}
+			data, err := NewAI().LucidOrigin(DiffusionOptions{Prompt: argument})
 			if err != nil {
 				m := tgbotapi.NewMessage(update.Message.Chat.ID, err.Error())
 				m.ReplyToMessageID = update.Message.MessageID

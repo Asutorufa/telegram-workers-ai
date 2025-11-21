@@ -1,8 +1,10 @@
+github.com/go-json-experiment/json v0.0.0-20251027170946-4849db3c2f7e h1:Lf/gRkoycfOBPa42vU2bbgPurFong6zXeFtPoxholzU=
+github.com/go-json-experiment/json v0.0.0-20251027170946-4849db3c2f7e/go.mod h1:uNVvRXArCGbZ508SxYYTC5v1JWoz2voff5pm25jU1Ok=
 github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1 h1:wG8n/XJQ07TmjbITcGiUaOtXxdrINDz1b0J1w0SzqDc=
 github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1/go.mod h1:A2S0CWkNylc2phvKXWBBdD3K0iGnDBGbzRpISP2zBl8=
 github.com/syumai/go-jsutil v0.2.0 h1:PMtWa9p8ir2AXiwGI8XtCNzjXhq9/5FETLFQcnW0/VQ=
 github.com/syumai/go-jsutil v0.2.0/go.mod h1:rWXCC7dzm0hLgRzZaF2pWvPL08rcx1jeUVTpP9WXyS8=
 github.com/syumai/tinyutil v0.3.2 h1:W6yvMJBo64jK5Rz1Ytq/IF8ZqUUSMqi1R2zyEUTnnsg=
 github.com/syumai/tinyutil v0.3.2/go.mod h1:/owCyUs1bh6tKxH7K1Ze3M/zZtZ+vGrj3h82fgNHDFI=
-github.com/syumai/workers v0.30.2 h1:ZefPdAoXBsw87Bxy1LTAR6Pm9Gbxw/iM7DNraPSput0=
-github.com/syumai/workers v0.30.2/go.mod h1:ZnqmdiHNBrbxOLrZ/HJ5jzHy6af9cmiNZk10R9NrIEA=
+github.com/syumai/workers v0.31.0 h1:i9PCkjfuwRvJv0DwaF7pxDNv9oeyEQfolyPtFTtkwEY=
+github.com/syumai/workers v0.31.0/go.mod h1:ZnqmdiHNBrbxOLrZ/HJ5jzHy6af9cmiNZk10R9NrIEA=

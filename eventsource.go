@@ -2,11 +2,12 @@ package ai
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"strings"
+
+	"github.com/go-json-experiment/json"
 )
 
 type llamaStreamDecoder struct {

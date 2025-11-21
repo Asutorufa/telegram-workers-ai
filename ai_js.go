@@ -2,11 +2,11 @@ package ai
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"io"
 	"math/rand/v2"
 	"syscall/js"
 
+	"github.com/go-json-experiment/json"
 	"github.com/syumai/go-jsutil"
 	"github.com/syumai/workers/cloudflare"
 )
@@ -63,8 +63,42 @@ func (a *AI) Dreamshaper(opt DiffusionOptions) (io.ReadCloser, error) {
 	return jsutil.ConvertReadableStreamToReadCloser(r), nil
 }
 
+func (a *AI) Phoenix(opt DiffusionOptions) (io.ReadCloser, error) {
+	p := a.instance.Call("run", "@cf/leonardo/phoenix-1.0", opt.toJS())
+
+	t, err := jsutil.AwaitPromise(p)
+	if err != nil {
+		return nil, err
+	}
+
+	r := js.Global().Get("Response").New(t).Get("body")
+	return jsutil.ConvertReadableStreamToReadCloser(r), nil
+}
+
 func (a *AI) Flux1Schnell(opt DiffusionOptions) ([]byte, error) {
 	p := a.instance.Call("run", "@cf/black-forest-labs/flux-1-schnell", opt.toJS())
+
+	t, err := jsutil.AwaitPromise(p)
+	if err != nil {
+		return nil, err
+	}
+
+	respString := js.Global().Get("JSON").Call("stringify", t).String()
+
+	type Response struct {
+		Image string `json:"image"`
+	}
+
+	var resp Response
+	if err := json.Unmarshal([]byte(respString), &resp); err != nil {
+		return nil, err
+	}
+
+	return base64.StdEncoding.DecodeString(resp.Image)
+}
+
+func (a *AI) LucidOrigin(opt DiffusionOptions) ([]byte, error) {
+	p := a.instance.Call("run", "@cf/leonardo/lucid-origin", opt.toJS())
 
 	t, err := jsutil.AwaitPromise(p)
 	if err != nil {
